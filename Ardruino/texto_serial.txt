@@ -1,0 +1,102 @@
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+//Crear el objeto lcd  dirección  0x3F y 16 columnas x 2 filas
+LiquidCrystal_I2C lcd(0x27,16,2);  //
+
+const int buzz = 8;
+const int EchoPin = 5;
+const int TriggerPin = 6;
+const int LedPin = 13;
+int tiempo_muestra = 5000, dist = 50;
+
+void setup() {
+  Serial.begin(9600);
+  
+  pinMode(buzz, OUTPUT);
+  // Inicializar el LCD
+  lcd.init();
+  
+  
+  //Encender la luz de fondo.
+  lcd.backlight();
+  
+  // Escribimos el Mensaje en el LCD en una posición  central.
+  lcd.setCursor(0, 0);
+  lcd.print("*ENVIO DE DATOS*");
+  bip(2);//sonido de 200 milisegundos
+  pinMode(LedPin, OUTPUT);
+  pinMode(TriggerPin, OUTPUT);
+  pinMode(EchoPin, INPUT);
+  delay(1000);
+}
+
+void loop() {
+  int cm = ping(TriggerPin, EchoPin);
+  
+  if (cm<dist){
+    Serial.println(1);
+    Mensaje(1);
+  }
+  
+  if (Serial.available()>0) 
+   {
+      MuestraNombre();
+   }
+}
+
+void bip(int espera)
+{
+  digitalWrite(buzz, HIGH);
+  delay(espera*100);
+  digitalWrite(buzz, LOW);
+  }
+
+int ping(int TriggerPin, int EchoPin) {
+   long duracion, distanciaCm;
+   
+   digitalWrite(TriggerPin, LOW);  //para generar un pulso limpio ponemos a LOW 4us
+   delayMicroseconds(4);
+   digitalWrite(TriggerPin, HIGH);  //generamos Trigger (disparo) de 10us
+   delayMicroseconds(10);
+   digitalWrite(TriggerPin, LOW);
+   
+   duracion = pulseIn(EchoPin, HIGH);  //medimos el tiempo entre pulsos, en microsegundos
+   
+   distanciaCm = duracion * 10 / 292/ 2;   //convertimos a distancia, en cm
+   return distanciaCm;
+}
+
+void MuestraNombre(){
+      String texto = Serial.readString();
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Nombre: ");
+      lcd.setCursor(0, 1 );
+      lcd.print(texto);
+      bip(5);
+      delay(tiempo_muestra);
+      Mensaje(2);
+      reset();
+}
+
+void Mensaje(int opc){
+  switch(opc){
+    case 1:
+      lcd.clear();
+      lcd.print("Procesando...");
+      bip(2);
+      break;
+      
+    case 2:
+      lcd.clear();
+      lcd.print("Reinicio...");
+      bip(4);
+  }
+  
+}
+
+void reset(){
+asm("jmp 0x0000");
+}
+
